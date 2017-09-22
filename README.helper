@@ -1,0 +1,8 @@
+This is software to display a daily verse from Scripture.
+
+Installation:
+  make
+  make install
+
+Usage:
+  helper
