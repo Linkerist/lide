@@ -1,0 +1,23 @@
+.TH helper 1 "Lide Helper" "DEBIAN" \" -*- nroff -*-
+.SH NAME
+helper \- Displays a daily devotional helper from scripture
+.SH SYNOPSIS
+\fBhelper\fP
+.SH DESCRIPTION
+Displays a helper taken from the database in
+.B /usr/share/helper/daily.helper
+that is specific for the current date.
+.SH INTEGRATION
+If you invoke
+.B helper
+from /etc/profile then the daily devotional helper will appear on each
+login for each user. Alternatively you could put the invocation of
+.B helper
+into the .profile of a user and have each user choose if he wants to use
+helper or not.
+.PP
+Note that you will run into trouble if you have dialin users whose scripts
+call pppd and put the helper call into /etc/profile. The output might confuse
+the ppp programs.
+.SH AUTHOR (of the helper program not the database)
+Linkerist <Linkerist@163.org>
