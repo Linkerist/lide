@@ -1,0 +1,14 @@
+tags
+
+__install
+
+*.swp
+
+*.o
+
+po
+
+dos2unix
+unix2dos
+mac2unix
+unix2mac

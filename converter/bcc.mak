@@ -42,7 +42,6 @@ mac2unix.exe: dos2unix.exe
 unix2mac.exe: unix2dos.exe
 	copy /v unix2dos.exe unix2mac.exe
 
-
 strip :
 	tdstrip dos2unix.exe
 	tdstrip unix2dos.exe
@@ -52,4 +51,3 @@ strip :
 clean:
 	del *.obj
 	del *.exe
-

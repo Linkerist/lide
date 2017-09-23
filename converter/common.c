@@ -1,29 +1,3 @@
-/*
- *   Copyright (C) 2009-2016 Erwin Waterlander
- *   All rights reserved.
- *
- *   Redistribution and use in source and binary forms, with or without
- *   modification, are permitted provided that the following conditions
- *   are met:
- *   1. Redistributions of source code must retain the above copyright
- *      notice, this list of conditions and the following disclaimer.
- *   2. Redistributions in binary form must reproduce the above copyright
- *      notice in the documentation and/or other materials provided with
- *      the distribution.
- *
- *   THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY
- *   EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- *   IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
- *   PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR BE LIABLE
- *   FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
- *   CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT
- *   OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR
- *   BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
- *   WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
- *   OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
- *   IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- */
-
 #include "common.h"
 #include "dos2unix.h"
 #include "querycp.h"
@@ -467,113 +441,121 @@ int regfile_target(char *path, CFlag *ipFlag, const char *progname)
  */
 
 #ifdef D2U_UNIFILE
-int glob_warg(int argc, wchar_t *wargv[], char ***argv, CFlag *ipFlag, const char *progname)
+int
+glob_warg(int argc, wchar_t *wargv[], char ***argv, CFlag *ipFlag, const char *progname)
 {
-  int i;
-  int argc_glob = 0;
-  wchar_t *warg;
-  wchar_t *path;
-  wchar_t *path_and_filename;
-  wchar_t *ptr;
-  char  *arg;
-  char  **argv_new;
-  char *errstr;
-  size_t len;
-  int found, add_path;
-  WIN32_FIND_DATA FindFileData;
-  HANDLE hFind;
+ int i;
+ int argc_glob = 0;
+ wchar_t *warg;
+ wchar_t *path;
+ wchar_t *path_and_filename;
+ wchar_t *ptr;
+ char  *arg;
+ char  **argv_new;
+ char *errstr;
+ size_t len;
+ int found, add_path;
+ WIN32_FIND_DATA FindFileData;
+ HANDLE hFind;
 
-  argv_new = (char **)malloc(sizeof(char**));
-  if (argv_new == NULL) goto glob_failed;
+ argv_new = (char **)malloc(sizeof(char**));
+ if (argv_new == NULL) goto glob_failed;
 
-  len = (size_t)d2u_WideCharToMultiByte(CP_UTF8, 0, wargv[0], -1, NULL, 0, NULL, NULL);
-  arg = (char *)malloc(len);
-  if (arg == NULL) goto glob_failed;
-  d2u_WideCharToMultiByte(CP_UTF8, 0, wargv[argc_glob], -1, arg, (int)len, NULL, NULL);
-  argv_new[argc_glob] = arg;
+ len = (size_t)d2u_WideCharToMultiByte(CP_UTF8, 0, wargv[0], -1, NULL, 0, NULL, NULL);
+ arg = (char *)malloc(len);
+ if (arg == NULL) goto glob_failed;
+ d2u_WideCharToMultiByte(CP_UTF8, 0, wargv[argc_glob], -1, arg, (int)len, NULL, NULL);
+ argv_new[argc_glob] = arg;
 
-  for (i=1; i<argc; ++i)
-  {
-    warg = wargv[i];
-    found = 0;
-    add_path = 0;
-    /* FindFileData.cFileName has the path stripped off. We need to add it again. */
-    path = _wcsdup(warg);
-    /* replace all back slashes with slashes */
-    while ( (ptr = wcschr(path,L'\\')) != NULL) {
-      *ptr = L'/';
-    }
-    if ( (ptr = wcsrchr(path,L'/')) != NULL) {
-      ptr++;
-      *ptr = L'\0';
-      add_path = 1;
-    }
-
-    hFind = FindFirstFileW(warg, &FindFileData);
-    while (hFind != INVALID_HANDLE_VALUE)
-    {
-      char **new_argv_new;
-      len = wcslen(path) + wcslen(FindFileData.cFileName) + 2;
-      path_and_filename = (wchar_t *)malloc(len*sizeof(wchar_t));
-      if (path_and_filename == NULL) goto glob_failed;
-      if (add_path) {
-        wcsncpy(path_and_filename, path, wcslen(path)+1);
-        wcsncat(path_and_filename, FindFileData.cFileName, wcslen(FindFileData.cFileName)+1);
-      } else {
-        wcsncpy(path_and_filename, FindFileData.cFileName, wcslen(FindFileData.cFileName)+1);
-      }
-
-      found = 1;
-      ++argc_glob;
-      len =(size_t) d2u_WideCharToMultiByte(CP_UTF8, 0, path_and_filename, -1, NULL, 0, NULL, NULL);
-      arg = (char *)malloc((size_t)len);
-      if (arg == NULL) goto glob_failed;
-      d2u_WideCharToMultiByte(CP_UTF8, 0, path_and_filename, -1, arg, (int)len, NULL, NULL);
-      free(path_and_filename);
-      new_argv_new = (char **)realloc(argv_new, (size_t)(argc_glob+1)*sizeof(char**));
-      if (new_argv_new == NULL) goto glob_failed;
-      else
-        argv_new = new_argv_new;
-      argv_new[argc_glob] = arg;
-
-      if (!FindNextFileW(hFind, &FindFileData)) {
-        FindClose(hFind);
-        hFind = INVALID_HANDLE_VALUE;
-      }
-    }
-    free(path);
-    if (found == 0) {
-    /* Not a file. Just copy the argument */
-      char **new_argv_new;
-      ++argc_glob;
-      len =(size_t) d2u_WideCharToMultiByte(CP_UTF8, 0, warg, -1, NULL, 0, NULL, NULL);
-      arg = (char *)malloc((size_t)len);
-      if (arg == NULL) goto glob_failed;
-      d2u_WideCharToMultiByte(CP_UTF8, 0, warg, -1, arg, (int)len, NULL, NULL);
-      new_argv_new = (char **)realloc(argv_new, (size_t)(argc_glob+1)*sizeof(char**));
-      if (new_argv_new == NULL) goto glob_failed;
-      else
-        argv_new = new_argv_new;
-      argv_new[argc_glob] = arg;
-    }
+ for (i = 1; i < argc; ++i) {
+  warg = wargv[i];
+  found = 0;
+  add_path = 0;
+  /* FindFileData.cFileName has the path stripped off. We need to add it again. */
+  path = _wcsdup(warg);
+  /* replace all back slashes with slashes */
+  while ( (ptr = wcschr(path,L'\\')) != NULL) {
+   *ptr = L'/';
   }
-  *argv = argv_new;
-  return ++argc_glob;
-
-  glob_failed:
-  if (ipFlag->verbose) {
-    ipFlag->error = errno;
-    errstr = strerror(errno);
-    D2U_UTF8_FPRINTF(stderr, "%s:", progname);
-    D2U_ANSI_FPRINTF(stderr, " %s\n", errstr);
+  if ( (ptr = wcsrchr(path,L'/')) != NULL) {
+   ptr++;
+   *ptr = L'\0';
+   add_path = 1;
   }
-  return -1;
+
+  hFind = FindFirstFileW(warg, &FindFileData);
+  while (hFind != INVALID_HANDLE_VALUE) {
+   char **new_argv_new;
+   len = wcslen(path) + wcslen(FindFileData.cFileName) + 2;
+   path_and_filename = (wchar_t *)malloc(len*sizeof(wchar_t));
+   if (path_and_filename == NULL)
+    goto glob_failed;
+   if (add_path) {
+    wcsncpy(path_and_filename, path, wcslen(path)+1);
+    wcsncat(path_and_filename, FindFileData.cFileName, wcslen(FindFileData.cFileName)+1);
+   } else {
+    wcsncpy(path_and_filename, FindFileData.cFileName, wcslen(FindFileData.cFileName)+1);
+   }
+
+   found = 1;
+   ++argc_glob;
+   len = (size_t) d2u_WideCharToMultiByte(CP_UTF8, 0, path_and_filename, -1, NULL, 0, NULL, NULL);
+   arg = (char *)malloc((size_t)len);
+   if (arg == NULL)
+    goto glob_failed;
+   d2u_WideCharToMultiByte(CP_UTF8, 0, path_and_filename, -1, arg, (int)len, NULL, NULL);
+   free(path_and_filename);
+   new_argv_new = (char **)realloc(argv_new, (size_t)(argc_glob+1)*sizeof(char**));
+   if (new_argv_new == NULL)
+    goto glob_failed;
+   else
+    argv_new = new_argv_new;
+
+   argv_new[argc_glob] = arg;
+
+   if (!FindNextFileW(hFind, &FindFileData)) {
+    FindClose(hFind);
+    hFind = INVALID_HANDLE_VALUE;
+   }
+  }
+  free(path);
+  if (found == 0) {
+   /* Not a file. Just copy the argument */
+   char **new_argv_new;
+   ++argc_glob;
+   len =(size_t) d2u_WideCharToMultiByte(CP_UTF8, 0, warg, -1, NULL, 0, NULL, NULL);
+   arg = (char *)malloc((size_t)len);
+   if (arg == NULL)
+    goto glob_failed;
+   d2u_WideCharToMultiByte(CP_UTF8, 0, warg, -1, arg, (int)len, NULL, NULL);
+   new_argv_new = (char **)realloc(argv_new, (size_t)(argc_glob+1)*sizeof(char**));
+
+   if (new_argv_new == NULL)
+    goto glob_failed;
+   else
+    argv_new = new_argv_new;
+
+   argv_new[argc_glob] = arg;
+  }
+ }
+ *argv = argv_new;
+ return ++argc_glob;
+
+glob_failed:
+ if (ipFlag->verbose) {
+  ipFlag->error = errno;
+  errstr = strerror(errno);
+  D2U_UTF8_FPRINTF(stderr, "%s:", progname);
+  D2U_ANSI_FPRINTF(stderr, " %s\n", errstr);
+ }
+ return -1;
 }
 #endif
 
-void PrintBSDLicense(void)
+void
+PrintBSDLicense(void)
 {
-  D2U_ANSI_FPRINTF(stdout,"%s", _("\
+ D2U_ANSI_FPRINTF(stdout,"%s", _("\
 Redistribution and use in source and binary forms, with or without\n\
 modification, are permitted provided that the following conditions\n\
 are met:\n\
@@ -583,7 +565,7 @@ are met:\n\
    notice in the documentation and/or other materials provided with\n\
    the distribution.\n\n\
 "));
-  D2U_ANSI_FPRINTF(stdout,"%s", _("\
+ D2U_ANSI_FPRINTF(stdout,"%s", _("\
 THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY\n\
 EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE\n\
 IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR\n\
@@ -598,362 +580,375 @@ IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.\n\
 "));
 }
 
-int is_dos2unix(const char *progname)
+int
+is_dos2unix(const char * progname)
 {
-  if ((strncmp(progname, "dos2unix", sizeof("dos2unix")) == 0) || (strncmp(progname, "mac2unix", sizeof("mac2unix")) == 0))
-    return 1;
-  else
-    return 0;
+ if ((strncmp(progname, "dos2unix", sizeof("dos2unix")) == 0) || (strncmp(progname, "mac2unix", sizeof("mac2unix")) == 0))
+  return 1;
+ else
+  return 0;
 }
 
-void PrintUsage(const char *progname)
+void
+PrintUsage(const char * progname)
 {
-  D2U_ANSI_FPRINTF(stdout,_("Usage: %s [options] [file ...] [-n infile outfile ...]\n"), progname);
-  D2U_ANSI_FPRINTF(stdout,_(" -ascii                convert only line breaks (default)\n"));
-  D2U_ANSI_FPRINTF(stdout,_(" -iso                  conversion between DOS and ISO-8859-1 character set\n"));
-  D2U_ANSI_FPRINTF(stdout,_("   -1252               use Windows code page 1252 (Western European)\n"));
-  D2U_ANSI_FPRINTF(stdout,_("   -437                use DOS code page 437 (US) (default)\n"));
-  D2U_ANSI_FPRINTF(stdout,_("   -850                use DOS code page 850 (Western European)\n"));
-  D2U_ANSI_FPRINTF(stdout,_("   -860                use DOS code page 860 (Portuguese)\n"));
-  D2U_ANSI_FPRINTF(stdout,_("   -863                use DOS code page 863 (French Canadian)\n"));
-  D2U_ANSI_FPRINTF(stdout,_("   -865                use DOS code page 865 (Nordic)\n"));
-  D2U_ANSI_FPRINTF(stdout,_(" -7                    convert 8 bit characters to 7 bit space\n"));
-  if (is_dos2unix(progname))
-    D2U_ANSI_FPRINTF(stdout,_(" -b, --keep-bom        keep Byte Order Mark\n"));
-  else
-    D2U_ANSI_FPRINTF(stdout,_(" -b, --keep-bom        keep Byte Order Mark (default)\n"));
-  D2U_ANSI_FPRINTF(stdout,_(" -c, --convmode        conversion mode\n\
+ D2U_ANSI_FPRINTF(stdout,_("Usage: %s [options] [file ...] [-n infile outfile ...]\n"), progname);
+ D2U_ANSI_FPRINTF(stdout,_(" -ascii                convert only line breaks (default)\n"));
+ D2U_ANSI_FPRINTF(stdout,_(" -iso                  conversion between DOS and ISO-8859-1 character set\n"));
+ D2U_ANSI_FPRINTF(stdout,_("   -1252               use Windows code page 1252 (Western European)\n"));
+ D2U_ANSI_FPRINTF(stdout,_("   -437                use DOS code page 437 (US) (default)\n"));
+ D2U_ANSI_FPRINTF(stdout,_("   -850                use DOS code page 850 (Western European)\n"));
+ D2U_ANSI_FPRINTF(stdout,_("   -860                use DOS code page 860 (Portuguese)\n"));
+ D2U_ANSI_FPRINTF(stdout,_("   -863                use DOS code page 863 (French Canadian)\n"));
+ D2U_ANSI_FPRINTF(stdout,_("   -865                use DOS code page 865 (Nordic)\n"));
+ D2U_ANSI_FPRINTF(stdout,_(" -7                    convert 8 bit characters to 7 bit space\n"));
+ if (is_dos2unix(progname))
+  D2U_ANSI_FPRINTF(stdout,_(" -b, --keep-bom        keep Byte Order Mark\n"));
+ else
+  D2U_ANSI_FPRINTF(stdout,_(" -b, --keep-bom        keep Byte Order Mark (default)\n"));
+ D2U_ANSI_FPRINTF(stdout,_(" -c, --convmode        conversion mode\n\
    convmode            ascii, 7bit, iso, mac, default to ascii\n"));
 #ifdef D2U_UNIFILE
-  D2U_ANSI_FPRINTF(stdout,_(" -D, --display-enc     set encoding of displayed text messages\n\
+ D2U_ANSI_FPRINTF(stdout,_(" -D, --display-enc     set encoding of displayed text messages\n\
    encoding            ansi, unicode, utf8, default to ansi\n"));
 #endif
-  D2U_ANSI_FPRINTF(stdout,_(" -f, --force           force conversion of binary files\n"));
+ D2U_ANSI_FPRINTF(stdout,_(" -f, --force           force conversion of binary files\n"));
 #ifdef D2U_UNICODE
 #if (defined(_WIN32) && !defined(__CYGWIN__))
-  D2U_ANSI_FPRINTF(stdout,_(" -gb, --gb18030        convert UTF-16 to GB18030\n"));
+ D2U_ANSI_FPRINTF(stdout,_(" -gb, --gb18030        convert UTF-16 to GB18030\n"));
 #endif
 #endif
-  D2U_ANSI_FPRINTF(stdout,_(" -h, --help            display this help text\n"));
-  D2U_ANSI_FPRINTF(stdout,_(" -i, --info[=FLAGS]    display file information\n\
+ D2U_ANSI_FPRINTF(stdout,_(" -h, --help            display this help text\n"));
+ D2U_ANSI_FPRINTF(stdout,_(" -i, --info[=FLAGS]    display file information\n\
    file ...            files to analyze\n"));
-  D2U_ANSI_FPRINTF(stdout,_(" -k, --keepdate        keep output file date\n"));
-  D2U_ANSI_FPRINTF(stdout,_(" -L, --license         display software license\n"));
-  D2U_ANSI_FPRINTF(stdout,_(" -l, --newline         add additional newline\n"));
-  D2U_ANSI_FPRINTF(stdout,_(" -m, --add-bom         add Byte Order Mark (default UTF-8)\n"));
-  D2U_ANSI_FPRINTF(stdout,_(" -n, --newfile         write to new file\n\
+ D2U_ANSI_FPRINTF(stdout,_(" -k, --keepdate        keep output file date\n"));
+ D2U_ANSI_FPRINTF(stdout,_(" -L, --license         display software license\n"));
+ D2U_ANSI_FPRINTF(stdout,_(" -l, --newline         add additional newline\n"));
+ D2U_ANSI_FPRINTF(stdout,_(" -m, --add-bom         add Byte Order Mark (default UTF-8)\n"));
+ D2U_ANSI_FPRINTF(stdout,_(" -n, --newfile         write to new file\n\
    infile              original file in new-file mode\n\
    outfile             output file in new-file mode\n"));
-  D2U_ANSI_FPRINTF(stdout,_(" -o, --oldfile         write to old file (default)\n\
+ D2U_ANSI_FPRINTF(stdout,_(" -o, --oldfile         write to old file (default)\n\
    file ...            files to convert in old-file mode\n"));
-  D2U_ANSI_FPRINTF(stdout,_(" -q, --quiet           quiet mode, suppress all warnings\n"));
-  if (is_dos2unix(progname))
-    D2U_ANSI_FPRINTF(stdout,_(" -r, --remove-bom      remove Byte Order Mark (default)\n"));
-  else
-    D2U_ANSI_FPRINTF(stdout,_(" -r, --remove-bom      remove Byte Order Mark\n"));
-  D2U_ANSI_FPRINTF(stdout,_(" -s, --safe            skip binary files (default)\n"));
+ D2U_ANSI_FPRINTF(stdout,_(" -q, --quiet           quiet mode, suppress all warnings\n"));
+ if (is_dos2unix(progname))
+  D2U_ANSI_FPRINTF(stdout,_(" -r, --remove-bom      remove Byte Order Mark (default)\n"));
+ else
+  D2U_ANSI_FPRINTF(stdout,_(" -r, --remove-bom      remove Byte Order Mark\n"));
+ D2U_ANSI_FPRINTF(stdout,_(" -s, --safe            skip binary files (default)\n"));
 #ifdef D2U_UNICODE
-  D2U_ANSI_FPRINTF(stdout,_(" -u,  --keep-utf16     keep UTF-16 encoding\n"));
-  D2U_ANSI_FPRINTF(stdout,_(" -ul, --assume-utf16le assume that the input format is UTF-16LE\n"));
-  D2U_ANSI_FPRINTF(stdout,_(" -ub, --assume-utf16be assume that the input format is UTF-16BE\n"));
+ D2U_ANSI_FPRINTF(stdout,_(" -u,  --keep-utf16     keep UTF-16 encoding\n"));
+ D2U_ANSI_FPRINTF(stdout,_(" -ul, --assume-utf16le assume that the input format is UTF-16LE\n"));
+ D2U_ANSI_FPRINTF(stdout,_(" -ub, --assume-utf16be assume that the input format is UTF-16BE\n"));
 #endif
-  D2U_ANSI_FPRINTF(stdout,_(" -v,  --verbose        verbose operation\n"));
+ D2U_ANSI_FPRINTF(stdout,_(" -v,  --verbose        verbose operation\n"));
 #ifdef S_ISLNK
-  D2U_ANSI_FPRINTF(stdout,_(" -F, --follow-symlink  follow symbolic links and convert the targets\n"));
+ D2U_ANSI_FPRINTF(stdout,_(" -F, --follow-symlink  follow symbolic links and convert the targets\n"));
 #endif
 #if defined(S_ISLNK) || (defined(_WIN32) && !defined(__CYGWIN__))
-  D2U_ANSI_FPRINTF(stdout,_(" -R, --replace-symlink replace symbolic links with converted files\n\
+ D2U_ANSI_FPRINTF(stdout,_(" -R, --replace-symlink replace symbolic links with converted files\n\
                          (original target files remain unchanged)\n"));
-  D2U_ANSI_FPRINTF(stdout,_(" -S, --skip-symlink    keep symbolic links and targets unchanged (default)\n"));
+ D2U_ANSI_FPRINTF(stdout,_(" -S, --skip-symlink    keep symbolic links and targets unchanged (default)\n"));
 #endif
-  D2U_ANSI_FPRINTF(stdout,_(" -V, --version         display version number\n"));
+ D2U_ANSI_FPRINTF(stdout,_(" -V, --version         display version number\n"));
 }
 
 #define MINGW32_W64 1
 
-void PrintVersion(const char *progname, const char *localedir)
+void
+PrintVersion(const char * progname, const char * localedir)
 {
-  D2U_ANSI_FPRINTF(stdout,"%s %s (%s)\n", progname, VER_REVISION, VER_DATE);
+ D2U_ANSI_FPRINTF(stdout,"%s %s (%s)\n", progname, VER_REVISION, VER_DATE);
 #if DEBUG
-  D2U_ANSI_FPRINTF(stdout,"VER_AUTHOR: %s\n", VER_AUTHOR);
+ D2U_ANSI_FPRINTF(stdout,"VER_AUTHOR: %s\n", VER_AUTHOR);
 #endif
 #if defined(__WATCOMC__) && defined(__I86__)
-  D2U_ANSI_FPRINTF(stdout,"%s", _("DOS 16 bit version (WATCOMC).\n"));
+ D2U_ANSI_FPRINTF(stdout,"%s", _("DOS 16 bit version (WATCOMC).\n"));
 #elif defined(__TURBOC__) && defined(__MSDOS__)
-  D2U_ANSI_FPRINTF(stdout,"%s", _("DOS 16 bit version (TURBOC).\n"));
+ D2U_ANSI_FPRINTF(stdout,"%s", _("DOS 16 bit version (TURBOC).\n"));
 #elif defined(__WATCOMC__) && defined(__DOS__)
-  D2U_ANSI_FPRINTF(stdout,"%s", _("DOS 32 bit version (WATCOMC).\n"));
+ D2U_ANSI_FPRINTF(stdout,"%s", _("DOS 32 bit version (WATCOMC).\n"));
 #elif defined(__DJGPP__)
-  D2U_ANSI_FPRINTF(stdout,"%s", _("DOS 32 bit version (DJGPP).\n"));
+ D2U_ANSI_FPRINTF(stdout,"%s", _("DOS 32 bit version (DJGPP).\n"));
 #elif defined(__MSYS__)
-  D2U_ANSI_FPRINTF(stdout,"%s", _("MSYS version.\n"));
+ D2U_ANSI_FPRINTF(stdout,"%s", _("MSYS version.\n"));
 #elif defined(__CYGWIN__)
-  D2U_ANSI_FPRINTF(stdout,"%s", _("Cygwin version.\n"));
+ D2U_ANSI_FPRINTF(stdout,"%s", _("Cygwin version.\n"));
 #elif defined(__WIN64__) && defined(__MINGW64__)
-  D2U_ANSI_FPRINTF(stdout,"%s", _("Windows 64 bit version (MinGW-w64).\n"));
+ D2U_ANSI_FPRINTF(stdout,"%s", _("Windows 64 bit version (MinGW-w64).\n"));
 #elif defined(__WATCOMC__) && defined(__NT__)
-  D2U_ANSI_FPRINTF(stdout,"%s", _("Windows 32 bit version (WATCOMC).\n"));
+ D2U_ANSI_FPRINTF(stdout,"%s", _("Windows 32 bit version (WATCOMC).\n"));
 #elif defined(_WIN32) && defined(__MINGW32__) && (D2U_COMPILER == MINGW32_W64)
-  D2U_ANSI_FPRINTF(stdout,"%s", _("Windows 32 bit version (MinGW-w64).\n"));
+ D2U_ANSI_FPRINTF(stdout,"%s", _("Windows 32 bit version (MinGW-w64).\n"));
 #elif defined(_WIN32) && defined(__MINGW32__)
-  D2U_ANSI_FPRINTF(stdout,"%s", _("Windows 32 bit version (MinGW).\n"));
+ D2U_ANSI_FPRINTF(stdout,"%s", _("Windows 32 bit version (MinGW).\n"));
 #elif defined(_WIN64) && defined(_MSC_VER)
-  D2U_ANSI_FPRINTF(stdout,_("Windows 64 bit version (MSVC %d).\n"),_MSC_VER);
+ D2U_ANSI_FPRINTF(stdout,_("Windows 64 bit version (MSVC %d).\n"),_MSC_VER);
 #elif defined(_WIN32) && defined(_MSC_VER)
-  D2U_ANSI_FPRINTF(stdout,_("Windows 32 bit version (MSVC %d).\n"),_MSC_VER);
+ D2U_ANSI_FPRINTF(stdout,_("Windows 32 bit version (MSVC %d).\n"),_MSC_VER);
 #elif defined (__OS2__) && defined(__WATCOMC__) /* OS/2 Warp */
-  D2U_ANSI_FPRINTF(stdout,"%s", _("OS/2 version (WATCOMC).\n"));
+ D2U_ANSI_FPRINTF(stdout,"%s", _("OS/2 version (WATCOMC).\n"));
 #elif defined (__OS2__) && defined(__EMX__) /* OS/2 Warp */
-  D2U_ANSI_FPRINTF(stdout,"%s", _("OS/2 version (EMX).\n"));
+ D2U_ANSI_FPRINTF(stdout,"%s", _("OS/2 version (EMX).\n"));
 #elif defined(__OS)
-  D2U_ANSI_FPRINTF(stdout,_("%s version.\n"), __OS);
+ D2U_ANSI_FPRINTF(stdout,_("%s version.\n"), __OS);
 #endif
 #if defined(_WIN32) && defined(WINVER)
-  D2U_ANSI_FPRINTF(stdout,"WINVER 0x%X\n",WINVER);
+ D2U_ANSI_FPRINTF(stdout,"WINVER 0x%X\n",WINVER);
 #endif
 #ifdef D2U_UNICODE
-  D2U_ANSI_FPRINTF(stdout,"%s", _("With Unicode UTF-16 support.\n"));
+ D2U_ANSI_FPRINTF(stdout,"%s", _("With Unicode UTF-16 support.\n"));
 #else
-  D2U_ANSI_FPRINTF(stdout,"%s", _("Without Unicode UTF-16 support.\n"));
+ D2U_ANSI_FPRINTF(stdout,"%s", _("Without Unicode UTF-16 support.\n"));
 #endif
 #ifdef _WIN32
 #ifdef D2U_UNIFILE
-  D2U_ANSI_FPRINTF(stdout,"%s", _("With Unicode file name support.\n"));
+ D2U_ANSI_FPRINTF(stdout,"%s", _("With Unicode file name support.\n"));
 #else
-  D2U_ANSI_FPRINTF(stdout,"%s", _("Without Unicode file name support.\n"));
+ D2U_ANSI_FPRINTF(stdout,"%s", _("Without Unicode file name support.\n"));
 #endif
 #endif
 #ifdef ENABLE_NLS
-  D2U_ANSI_FPRINTF(stdout,"%s", _("With native language support.\n"));
+ D2U_ANSI_FPRINTF(stdout,"%s", _("With native language support.\n"));
 #else
-  D2U_ANSI_FPRINTF(stdout,"%s", "Without native language support.\n");
+ D2U_ANSI_FPRINTF(stdout,"%s", "Without native language support.\n");
 #endif
 #ifdef ENABLE_NLS
-  D2U_ANSI_FPRINTF(stdout,"LOCALEDIR: %s\n", localedir);
+ D2U_ANSI_FPRINTF(stdout,"LOCALEDIR: %s\n", localedir);
 #endif
-  D2U_ANSI_FPRINTF(stdout,"http://waterlan.home.xs4all.nl/dos2unix.html\n");
+ D2U_ANSI_FPRINTF(stdout,"http://waterlan.home.xs4all.nl/dos2unix.html\n");
 }
 
 /* opens file of name ipFN in read only mode
  * RetVal: NULL if failure
  *         file stream otherwise
  */
-FILE* OpenInFile(char *ipFN)
+FILE *
+OpenInFile(char *ipFN)
 {
 #ifdef D2U_UNIFILE
-  wchar_t pathw[D2U_MAX_PATH];
+ wchar_t pathw[D2U_MAX_PATH];
 
-  d2u_MultiByteToWideChar(CP_UTF8, 0, ipFN, -1, pathw, D2U_MAX_PATH);
-  return _wfopen(pathw, R_CNTRLW);
+ d2u_MultiByteToWideChar(CP_UTF8, 0, ipFN, -1, pathw, D2U_MAX_PATH);
+ return _wfopen(pathw, R_CNTRLW);
 #else
-  return (fopen(ipFN, R_CNTRL));
+ return (fopen(ipFN, R_CNTRL));
 #endif
 }
 
 
-/* opens file of name opFN in write only mode
+/*
+ * opens file of name opFN in write only mode
  * RetVal: NULL if failure
  *         file stream otherwise
  */
-FILE* OpenOutFile(char *opFN)
+FILE *
+OpenOutFile(char * opFN)
 {
 #ifdef D2U_UNIFILE
-  wchar_t pathw[D2U_MAX_PATH];
+ wchar_t pathw[D2U_MAX_PATH];
 
-  d2u_MultiByteToWideChar(CP_UTF8, 0, opFN, -1, pathw, D2U_MAX_PATH);
-  return _wfopen(pathw, W_CNTRLW);
+ d2u_MultiByteToWideChar(CP_UTF8, 0, opFN, -1, pathw, D2U_MAX_PATH);
+ return _wfopen(pathw, W_CNTRLW);
 #else
-  return (fopen(opFN, W_CNTRL));
+ return (fopen(opFN, W_CNTRL));
 #endif
 }
 
-/* opens file descriptor in write only mode
+/*
+ * opens file descriptor in write only mode
  * RetVal: NULL if failure
  *         file stream otherwise
  */
-FILE* OpenOutFiled(int fd)
+FILE *
+OpenOutFiled(int fd)
 {
-  return (fdopen(fd, W_CNTRL));
+ return (fdopen(fd, W_CNTRL));
 }
 
 #if defined(__TURBOC__) || defined(__MSYS__) || defined(_MSC_VER)
 /* Both dirname() and basename() may modify the contents of path.
  * It may be desirable to pass a copy. */
-char *dirname(char *path)
+char *
+dirname(char *path)
 {
-  char *ptr;
+ char *ptr;
 
-  /* replace all back slashes with slashes */
-  while ( (ptr = strchr(path,'\\')) != NULL)
-    *ptr = '/';
-  /* Code checkers may report that the condition (path == NULL) is redundant.
-     E.g. Cppcheck 1.72. The condition (path == NULL) is needed, because
-     the behaviour of strrchr is not specified when it get's a NULL string.
-     The behaviour may be undefined, dependent on the implementation. */
-  if ((path == NULL) || ((ptr=strrchr(path,'/')) == NULL))
-    return ".";
+ /* replace all back slashes with slashes */
+ while ((ptr = strchr(path,'\\')) != NULL)
+  *ptr = '/';
+ /* Code checkers may report that the condition (path == NULL) is redundant.
+ E.g. Cppcheck 1.72. The condition (path == NULL) is needed, because
+ the behaviour of strrchr is not specified when it get's a NULL string.
+ The behaviour may be undefined, dependent on the implementation. */
+ if ((path == NULL) || ((ptr=strrchr(path,'/')) == NULL))
+  return ".";
 
-  if (strcmp(path,"/") == 0)
-    return "/";
+ if (strcmp(path,"/") == 0)
+  return "/";
 
-  *ptr = '\0';
-  return path;
+ *ptr = '\0';
+ return path;
 }
 
-char *basename(char *path)
+char *
+basename(char *path)
 {
-  char *ptr;
+ char *ptr;
 
-  /* replace all back slashes with slashes */
-  while ( (ptr = strchr(path,'\\')) != NULL)
-    *ptr = '/';
-  /* Code checkers may report that the condition (path == NULL) is redundant.
-     E.g. Cppcheck 1.72. The condition (path == NULL) is needed, because
-     the behaviour of strrchr is not specified when it get's a NULL string.
-     The behaviour may be undefined, dependent on the implementation. */
-  if ((path == NULL) || ((ptr=strrchr(path,'/')) == NULL))
-    return path ;
+ /* replace all back slashes with slashes */
+ while ( (ptr = strchr(path,'\\')) != NULL)
+  *ptr = '/';
+ /* Code checkers may report that the condition (path == NULL) is redundant.
+ E.g. Cppcheck 1.72. The condition (path == NULL) is needed, because
+ the behaviour of strrchr is not specified when it get's a NULL string.
+ The behaviour may be undefined, dependent on the implementation. */
+ if ((path == NULL) || ((ptr = strrchr(path, '/')) == NULL))
+  return path ;
 
-  if (strcmp(path,"/") == 0)
-    return "/";
+ if (strcmp(path, "/") == 0)
+  return "/";
 
-   ptr++;
-   return ptr ;
+ ptr++;
+ return ptr ;
 }
 #endif
 
-/* Standard mktemp() is not safe to use (See mktemp(3)).
+/*
+ * Standard mktemp() is not safe to use (See mktemp(3)).
  * On Windows it is recommended to use GetTempFileName() (See MSDN).
  * This mktemp() wrapper redirects to GetTempFileName() on Windows.
  * On Windows template is not modified, the returned pointer has to
  * be used.
  */
 #ifdef NO_MKSTEMP
-char *d2u_mktemp(char *template)
+char *
+d2u_mktemp(char *template)
 {
 #if defined(_WIN32) && !defined(__CYGWIN__)
 
-  unsigned int uRetVal;
-  char *cpy1, *cpy2, *dn, *bn;
-  char *ptr;
-  size_t len;
+ unsigned int uRetVal;
+ char *cpy1, *cpy2, *dn, *bn;
+ char *ptr;
+ size_t len;
 #ifdef D2U_UNIFILE /* template is UTF-8 formatted. */
-  wchar_t dnw[MAX_PATH];
-  wchar_t bnw[MAX_PATH];
-  wchar_t szTempFileNamew[MAX_PATH];
-  char *fname_str;
-  int error = 0;
+ wchar_t dnw[MAX_PATH];
+ wchar_t bnw[MAX_PATH];
+ wchar_t szTempFileNamew[MAX_PATH];
+ char *fname_str;
+ int error = 0;
 #else
-  char szTempFileName[MAX_PATH];
-  char *fname_str;
+ char szTempFileName[MAX_PATH];
+ char *fname_str;
 #endif
-  if ((cpy1 = strdup(template)) == NULL)
-    return NULL;
-  if ((cpy2 = strdup(template)) == NULL) {
-    free(cpy1);
-    return NULL;
-  }
-  dn = dirname(cpy1);
-  bn = basename(cpy2);
+ if ((cpy1 = strdup(template)) == NULL)
+  return NULL;
+ if ((cpy2 = strdup(template)) == NULL) {
+  free(cpy1);
+  return NULL;
+ }
+ dn = dirname(cpy1);
+ bn = basename(cpy2);
 #ifdef D2U_UNIFILE /* template is UTF-8 formatted. */
-  if (d2u_MultiByteToWideChar(CP_UTF8, 0, dn, -1, NULL, 0) > (MAX_PATH - 15)) {
-      D2U_UTF8_FPRINTF(stderr, "%s: ", "dos2unix");
-      D2U_ANSI_FPRINTF(stderr, _("Path for temporary output file is too long:"));
-      D2U_UTF8_FPRINTF(stderr, " %s\n", dn);
-      error=1;
-  }
-  if ((!error) && (d2u_MultiByteToWideChar(CP_UTF8, 0, dn, -1, dnw, MAX_PATH) == 0))
-    error=1;
-  if ((!error) && (d2u_MultiByteToWideChar(CP_UTF8, 0, bn, -1, bnw, MAX_PATH) == 0))
-    error=1;
-  free(cpy1);
-  free(cpy2);
-  if (error)
-    return NULL;
-  uRetVal = GetTempFileNameW(dnw, bnw, 0, szTempFileNamew);
-  if (! uRetVal) {
-    d2u_PrintLastError("dos2unix");
-    return NULL;
-  }
-  len =(size_t) d2u_WideCharToMultiByte(CP_UTF8, 0, szTempFileNamew, -1, NULL, 0, NULL, NULL);
-  fname_str = (char *)malloc(len);
-  if (! fname_str)
-    return NULL;
-  if (d2u_WideCharToMultiByte(CP_UTF8, 0, szTempFileNamew, -1, fname_str, MAX_PATH, NULL, NULL) == 0)
-    return NULL;
+ if (d2u_MultiByteToWideChar(CP_UTF8, 0, dn, -1, NULL, 0) > (MAX_PATH - 15)) {
+  D2U_UTF8_FPRINTF(stderr, "%s: ", "dos2unix");
+  D2U_ANSI_FPRINTF(stderr, _("Path for temporary output file is too long:"));
+  D2U_UTF8_FPRINTF(stderr, " %s\n", dn);
+  error = 1;
+ }
+ if ((!error) && (d2u_MultiByteToWideChar(CP_UTF8, 0, dn, -1, dnw, MAX_PATH) == 0))
+  error = 1;
+ if ((!error) && (d2u_MultiByteToWideChar(CP_UTF8, 0, bn, -1, bnw, MAX_PATH) == 0))
+  error = 1;
+ free(cpy1);
+ free(cpy2);
+ if (error)
+  return NULL;
+ uRetVal = GetTempFileNameW(dnw, bnw, 0, szTempFileNamew);
+ if (! uRetVal) {
+  d2u_PrintLastError("dos2unix");
+  return NULL;
+ }
+ len = (size_t) d2u_WideCharToMultiByte(CP_UTF8, 0, szTempFileNamew, -1, NULL, 0, NULL, NULL);
+ fname_str = (char *)malloc(len);
+ if (! fname_str)
+  return NULL;
+ if (d2u_WideCharToMultiByte(CP_UTF8, 0, szTempFileNamew, -1, fname_str, MAX_PATH, NULL, NULL) == 0)
+  return NULL;
 #else
-  uRetVal = GetTempFileNameA(dn, bn, 0, szTempFileName);
-  free(cpy1);
-  free(cpy2);
-  if (! uRetVal) {
-    d2u_PrintLastError("dos2unix");
-    return NULL;
-  }
-  len = strlen(szTempFileName) +1;
-  fname_str = (char *)malloc(len);
-  if (! fname_str)
-    return NULL;
-  strcpy(fname_str, szTempFileName);
+ uRetVal = GetTempFileNameA(dn, bn, 0, szTempFileName);
+ free(cpy1);
+ free(cpy2);
+ if (! uRetVal) {
+  d2u_PrintLastError("dos2unix");
+  return NULL;
+ }
+ len = strlen(szTempFileName) + 1;
+ fname_str = (char *)malloc(len);
+ if (! fname_str)
+  return NULL;
+ strcpy(fname_str, szTempFileName);
 #endif
-  /* replace all back slashes with slashes */
-  while ( (ptr = strchr(fname_str,'\\')) != NULL)
-    *ptr = '/';
-  return fname_str;
+/* replace all back slashes with slashes */
+ while ((ptr = strchr(fname_str, '\\')) != NULL)
+  *ptr = '/';
+ return fname_str;
 
 #else
-  return mktemp(template);
+ return mktemp(template);
 #endif
 }
 #endif
 
-FILE* MakeTempFileFrom(const char *OutFN, char **fname_ret)
+FILE *
+MakeTempFileFrom(const char *OutFN, char **fname_ret)
 {
-  char *cpy = strdup(OutFN);
-  char *dir = NULL;
-  size_t fname_len = 0;
-  char  *fname_str = NULL;
-  FILE *fp = NULL;  /* file pointer */
+ char *cpy = strdup(OutFN);
+ char *dir = NULL;
+ size_t fname_len = 0;
+ char  *fname_str = NULL;
+ FILE *fp = NULL;  /* file pointer */
 #ifdef NO_MKSTEMP
-  char *name;
+ char *name;
 #else
-  int fd = -1;  /* file descriptor */
+ int fd = -1;  /* file descriptor */
 #endif
 
-  *fname_ret = NULL;
+ *fname_ret = NULL;
 
-  if (!cpy)
-    goto make_failed;
+ if (!cpy)
+  goto make_failed;
 
-  dir = dirname(cpy);
+ dir = dirname(cpy);
 
-  fname_len = strlen(dir) + strlen("/d2utmpXXXXXX") + sizeof (char);
-  if (!(fname_str = (char *)malloc(fname_len)))
-    goto make_failed;
-  sprintf(fname_str, "%s%s", dir, "/d2utmpXXXXXX");
-  *fname_ret = fname_str;
+ fname_len = strlen(dir) + strlen("/d2utmpXXXXXX") + sizeof (char);
+ if (!(fname_str = (char *)malloc(fname_len)))
+  goto make_failed;
+ sprintf(fname_str, "%s%s", dir, "/d2utmpXXXXXX");
+ *fname_ret = fname_str;
 
-  free(cpy);
+ free(cpy);
 
 #ifdef NO_MKSTEMP
-  if ((name = d2u_mktemp(fname_str)) == NULL)
-    goto make_failed;
-  *fname_ret = name;
-  if ((fp = OpenOutFile(name)) == NULL)
-    goto make_failed;
+ if ((name = d2u_mktemp(fname_str)) == NULL)
+  goto make_failed;
+ *fname_ret = name;
+ if ((fp = OpenOutFile(name)) == NULL)
+  goto make_failed;
 #else
-  if ((fd = mkstemp(fname_str)) == -1)
-    goto make_failed;
+ if ((fd = mkstemp(fname_str)) == -1)
+  goto make_failed;
 
-  if ((fp=OpenOutFiled(fd)) == NULL)
-    goto make_failed;
+ if ((fp=OpenOutFiled(fd)) == NULL)
+  goto make_failed;
 #endif
 
-  return (fp);
+ return (fp);
 
-  make_failed:
-    free(*fname_ret);
-    *fname_ret = NULL;
-    return NULL;
+make_failed:
+ free(*fname_ret);
+ *fname_ret = NULL;
+ return NULL;
 }
 
 /* Test if *lFN is the name of a symbolic link.  If not, set *rFN equal
@@ -1045,10 +1040,9 @@ int ResolveSymbolicLink(char *lFN, char **rFN, CFlag *ipFlag, const char *progna
   return RetVal;
 }
 
-/* Read the Byte Order Mark.
-   Returns file pointer or NULL in case of a read error */
-
-FILE *read_bom (FILE *f, int *bomtype)
+/* Read the Byte Order Mark. Returns file pointer or NULL in case of a read error */
+FILE *
+read_bom (FILE * f, int *bomtype)
 {
   /* BOMs
    * UTF16-LE  ff fe

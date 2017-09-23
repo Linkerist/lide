@@ -73,7 +73,8 @@ UNIX2MAC_BIN	= $(UNIX2MAC)$(EXE)
 LINK		= ln -sf
 LINK_MAN	= $(LINK)
 
-prefix		= /usr
+#prefix		= /usr
+prefix		= $(PWD)/__install
 exec_prefix	= $(prefix)
 bindir		= $(exec_prefix)/bin
 datarootdir	= $(prefix)/share

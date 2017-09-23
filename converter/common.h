@@ -1,29 +1,3 @@
-/*
- *   Copyright (C) 2009-2016 Erwin Waterlander
- *   All rights reserved.
- *
- *   Redistribution and use in source and binary forms, with or without
- *   modification, are permitted provided that the following conditions
- *   are met:
- *   1. Redistributions of source code must retain the above copyright
- *      notice, this list of conditions and the following disclaimer.
- *   2. Redistributions in binary form must reproduce the above copyright
- *      notice in the documentation and/or other materials provided with
- *      the distribution.
- *
- *   THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY
- *   EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- *   IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
- *   PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR BE LIABLE
- *   FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
- *   CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT
- *   OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR
- *   BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
- *   WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
- *   OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
- *   IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- */
-
 #ifndef __D2U_COMMON_H
 #define __D2U_COMMON_H
 
@@ -225,26 +199,25 @@
 #define TARGET_GB18030 1
 #define D2U_MAX_PATH 2048
 
-typedef struct
-{
-  int NewFile;                          /* is in new file mode? */
-  int verbose;                          /* 0 = quiet, 1 = normal, 2 = verbose */
-  int KeepDate;                         /* should keep date stamp? */
-  int ConvMode;                         /* 0: ascii, 1: 7bit, 2: iso */
-  int FromToMode;                       /* 0: dos2unix/unix2dos, 1: mac2unix/unix2mac */
-  int NewLine;                          /* if TRUE, then additional newline */
-  int Force;                            /* if TRUE, force conversion of all files. */
-  int Follow;                           /* 0: skip symlink, 1: follow symbolic link, 2: replace symlink. */
-  int status;
-  int stdio_mode;                       /* if TRUE, stdio mode */
-  int error;                            /* an error occurred */
-  int bomtype;                          /* byte order mark */
-  int add_bom;                          /* 1: write BOM */
-  int keep_bom;                         /* 1: write BOM if input file has BOM. 0: Do not write BOM */
-  int keep_utf16;                       /* 1: write UTF-16 format when input file is UTF-16 format */
-  int file_info;                        /* 1: print file information */
-  int locale_target;                    /* locale conversion target. 0: UTF-8; 1: GB18030 */
-  unsigned int line_nr;                 /* line number where UTF-16 error occurs */
+typedef struct {
+ int NewFile;                          /* is in new file mode? */
+ int verbose;                          /* 0 = quiet, 1 = normal, 2 = verbose */
+ int KeepDate;                         /* should keep date stamp? */
+ int ConvMode;                         /* 0: ascii, 1: 7bit, 2: iso */
+ int FromToMode;                       /* 0: dos2unix/unix2dos, 1: mac2unix/unix2mac */
+ int NewLine;                          /* if TRUE, then additional newline */
+ int Force;                            /* if TRUE, force conversion of all files. */
+ int Follow;                           /* 0: skip symlink, 1: follow symbolic link, 2: replace symlink. */
+ int status;
+ int stdio_mode;                       /* if TRUE, stdio mode */
+ int error;                            /* an error occurred */
+ int bomtype;                          /* byte order mark */
+ int add_bom;                          /* 1: write BOM */
+ int keep_bom;                         /* 1: write BOM if input file has BOM. 0: Do not write BOM */
+ int keep_utf16;                       /* 1: write UTF-16 format when input file is UTF-16 format */
+ int file_info;                        /* 1: print file information */
+ int locale_target;                    /* locale conversion target. 0: UTF-8; 1: GB18030 */
+ unsigned int line_nr;                 /* line number where UTF-16 error occurs */
 } CFlag;
 
 
