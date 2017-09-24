@@ -459,11 +459,13 @@ glob_warg(int argc, wchar_t *wargv[], char ***argv, CFlag *ipFlag, const char *p
  HANDLE hFind;
 
  argv_new = (char **)malloc(sizeof(char**));
- if (argv_new == NULL) goto glob_failed;
+ if (argv_new == NULL)
+  goto glob_failed;
 
  len = (size_t)d2u_WideCharToMultiByte(CP_UTF8, 0, wargv[0], -1, NULL, 0, NULL, NULL);
  arg = (char *)malloc(len);
- if (arg == NULL) goto glob_failed;
+ if (arg == NULL)
+  goto glob_failed;
  d2u_WideCharToMultiByte(CP_UTF8, 0, wargv[argc_glob], -1, arg, (int)len, NULL, NULL);
  argv_new[argc_glob] = arg;
 
@@ -506,6 +508,7 @@ glob_warg(int argc, wchar_t *wargv[], char ***argv, CFlag *ipFlag, const char *p
    d2u_WideCharToMultiByte(CP_UTF8, 0, path_and_filename, -1, arg, (int)len, NULL, NULL);
    free(path_and_filename);
    new_argv_new = (char **)realloc(argv_new, (size_t)(argc_glob+1)*sizeof(char**));
+
    if (new_argv_new == NULL)
     goto glob_failed;
    else
@@ -736,7 +739,6 @@ OpenInFile(char *ipFN)
 #endif
 }
 
-
 /*
  * opens file of name opFN in write only mode
  * RetVal: NULL if failure
@@ -775,16 +777,16 @@ dirname(char *path)
  char *ptr;
 
  /* replace all back slashes with slashes */
- while ((ptr = strchr(path,'\\')) != NULL)
+ while ((ptr = strchr(path, '\\')) != NULL)
   *ptr = '/';
  /* Code checkers may report that the condition (path == NULL) is redundant.
  E.g. Cppcheck 1.72. The condition (path == NULL) is needed, because
  the behaviour of strrchr is not specified when it get's a NULL string.
  The behaviour may be undefined, dependent on the implementation. */
- if ((path == NULL) || ((ptr=strrchr(path,'/')) == NULL))
+ if ((path == NULL) || ((ptr = strrchr(path, '/')) == NULL))
   return ".";
 
- if (strcmp(path,"/") == 0)
+ if (strcmp(path, "/") == 0)
   return "/";
 
  *ptr = '\0';
@@ -965,75 +967,73 @@ make_failed:
  *         1 if success, and *lFN is a symlink
  *         -1 otherwise
  */
-int ResolveSymbolicLink(char *lFN, char **rFN, CFlag *ipFlag, const char *progname)
+int
+ResolveSymbolicLink(char * lFN, char ** rFN, CFlag * ipFlag, const char * progname)
 {
   int RetVal = 0;
 #ifdef S_ISLNK
-  struct stat StatBuf;
-  char *errstr;
-  char *targetFN = NULL;
+ struct stat StatBuf;
+ char * errstr;
+ char * targetFN = NULL;
 
-  if (STAT(lFN, &StatBuf)) {
-    if (ipFlag->verbose) {
-      ipFlag->error = errno;
-      errstr = strerror(errno);
-      D2U_UTF8_FPRINTF(stderr, "%s: %s:", progname, lFN);
-      D2U_ANSI_FPRINTF(stderr, " %s\n", errstr);
-    }
-    RetVal = -1;
+ if (STAT(lFN, &StatBuf)) {
+  if (ipFlag->verbose) {
+   ipFlag->error = errno;
+   errstr = strerror(errno);
+   D2U_UTF8_FPRINTF(stderr, "%s: %s:", progname, lFN);
+   D2U_ANSI_FPRINTF(stderr, " %s\n", errstr);
   }
-  else if (S_ISLNK(StatBuf.st_mode)) {
+  RetVal = -1;
+ } else if (S_ISLNK(StatBuf.st_mode)) {
 #if USE_CANONICALIZE_FILE_NAME
-    targetFN = canonicalize_file_name(lFN);
-    if (!targetFN) {
-      if (ipFlag->verbose) {
-        ipFlag->error = errno;
-        errstr = strerror(errno);
-        D2U_UTF8_FPRINTF(stderr, "%s: %s:", progname, lFN);
-        D2U_ANSI_FPRINTF(stderr, " %s\n", errstr);
-      }
-      RetVal = -1;
-    }
-    else {
-      *rFN = targetFN;
-      RetVal = 1;
-    }
-#else
-    /* Sigh. Use realpath, but realize that it has a fatal
-     * flaw: PATH_MAX isn't necessarily the maximum path
-     * length -- so realpath() might fail. */
-    targetFN = (char *) malloc(PATH_MAX * sizeof(char));
-    if (!targetFN) {
-      if (ipFlag->verbose) {
-        ipFlag->error = errno;
-        errstr = strerror(errno);
-        D2U_UTF8_FPRINTF(stderr, "%s: %s:", progname, lFN);
-        D2U_ANSI_FPRINTF(stderr, " %s\n", errstr);
-      }
-      RetVal = -1;
-    }
-    else {
-      /* is there any platform with S_ISLNK that does not have realpath? */
-      char *rVal = realpath(lFN, targetFN);
-      if (!rVal) {
-        if (ipFlag->verbose) {
-          ipFlag->error = errno;
-          errstr = strerror(errno);
-          D2U_UTF8_FPRINTF(stderr, "%s: %s:", progname, lFN);
-          D2U_ANSI_FPRINTF(stderr, " %s\n", errstr);
-        }
-        free(targetFN);
-        RetVal = -1;
-      }
-      else {
-        *rFN = rVal;
-        RetVal = 1;
-      }
-    }
-#endif /* !USE_CANONICALIZE_FILE_NAME */
+  targetFN = canonicalize_file_name(lFN);
+  if (!targetFN) {
+   if (ipFlag->verbose) {
+    ipFlag->error = errno;
+    errstr = strerror(errno);
+    D2U_UTF8_FPRINTF(stderr, "%s: %s:", progname, lFN);
+    D2U_ANSI_FPRINTF(stderr, " %s\n", errstr);
+   }
+   RetVal = -1;
+  } else {
+   *rFN = targetFN;
+   RetVal = 1;
   }
-  else
-    *rFN = lFN;
+#else
+  /*
+   * Sigh. Use realpath, but realize that it has a fatal
+   * flaw: PATH_MAX isn't necessarily the maximum path
+   * length -- so realpath() might fail.
+   */
+  targetFN = (char *) malloc(PATH_MAX * sizeof(char));
+  if (!targetFN) {
+   if (ipFlag->verbose) {
+    ipFlag->error = errno;
+    errstr = strerror(errno);
+    D2U_UTF8_FPRINTF(stderr, "%s: %s:", progname, lFN);
+    D2U_ANSI_FPRINTF(stderr, " %s\n", errstr);
+   }
+   RetVal = -1;
+  } else {
+   /* is there any platform with S_ISLNK that does not have realpath? */
+   char *rVal = realpath(lFN, targetFN);
+   if (!rVal) {
+    if (ipFlag->verbose) {
+     ipFlag->error = errno;
+     errstr = strerror(errno);
+     D2U_UTF8_FPRINTF(stderr, "%s: %s:", progname, lFN);
+     D2U_ANSI_FPRINTF(stderr, " %s\n", errstr);
+    }
+    free(targetFN);
+    RetVal = -1;
+   } else {
+    *rFN = rVal;
+    RetVal = 1;
+   }
+  }
+#endif /* !USE_CANONICALIZE_FILE_NAME */
+ } else
+  *rFN = lFN;
 #else  /* !S_ISLNK */
   *rFN = lFN;
 #endif /* !S_ISLNK */
@@ -1044,143 +1044,144 @@ int ResolveSymbolicLink(char *lFN, char **rFN, CFlag *ipFlag, const char *progna
 FILE *
 read_bom (FILE * f, int *bomtype)
 {
-  /* BOMs
-   * UTF16-LE  ff fe
-   * UTF16-BE  fe ff
-   * UTF-8     ef bb bf
-   * GB18030   84 31 95 33
-   */
+ /* BOMs
+  * UTF16-LE  ff fe
+  * UTF16-BE  fe ff
+  * UTF-8     ef bb bf
+  * GB18030   84 31 95 33
+  */
 
-  *bomtype = FILE_MBS;
+ *bomtype = FILE_MBS;
 
-   /* Check for BOM */
-   if  (f != NULL) {
-      int bom[4];
-      if ((bom[0] = fgetc(f)) == EOF) {
-         if (ferror(f)) {
-           return NULL;
-         }
-         *bomtype = FILE_MBS;
-         return(f);
-      }
-      if ((bom[0] != 0xff) && (bom[0] != 0xfe) && (bom[0] != 0xef) && (bom[0] != 0x84)) {
-         if (ungetc(bom[0], f) == EOF) return NULL;
-         *bomtype = FILE_MBS;
-         return(f);
-      }
-      if ((bom[1] = fgetc(f)) == EOF) {
-         if (ferror(f)) {
-           return NULL;
-         }
-         if (ungetc(bom[1], f) == EOF) return NULL;
-         if (ungetc(bom[0], f) == EOF) return NULL;
-         *bomtype = FILE_MBS;
-         return(f);
-      }
-      if ((bom[0] == 0xff) && (bom[1] == 0xfe)) { /* UTF16-LE */
-         *bomtype = FILE_UTF16LE;
-         return(f);
-      }
-      if ((bom[0] == 0xfe) && (bom[1] == 0xff)) { /* UTF16-BE */
-         *bomtype = FILE_UTF16BE;
-         return(f);
-      }
-      if ((bom[2] = fgetc(f)) == EOF) {
-         if (ferror(f)) {
-           return NULL;
-         }
-         if (ungetc(bom[2], f) == EOF) return NULL;
-         if (ungetc(bom[1], f) == EOF) return NULL;
-         if (ungetc(bom[0], f) == EOF) return NULL;
-         *bomtype = FILE_MBS;
-         return(f);
-      }
-      if ((bom[0] == 0xef) && (bom[1] == 0xbb) && (bom[2]== 0xbf)) { /* UTF-8 */
-         *bomtype = FILE_UTF8;
-         return(f);
-      }
-      if ((bom[0] == 0x84) && (bom[1] == 0x31) && (bom[2]== 0x95)) {
-         bom[3] = fgetc(f);
-           if (ferror(f)) {
-             return NULL;
-          }
-         if (bom[3]== 0x33) { /* GB18030 */
-           *bomtype = FILE_GB18030;
-           return(f);
-         }
-         if (ungetc(bom[3], f) == EOF) return NULL;
-      }
-      if (ungetc(bom[2], f) == EOF) return NULL;
-      if (ungetc(bom[1], f) == EOF) return NULL;
-      if (ungetc(bom[0], f) == EOF) return NULL;
-      *bomtype = FILE_MBS;
-      return(f);
+ /* Check for BOM */
+ if  (f != NULL) {
+  int bom[4];
+  if ((bom[0] = fgetc(f)) == EOF) {
+   if (ferror(f)) {
+    return NULL;
    }
-  return(f);
-}
-
-FILE *write_bom (FILE *f, CFlag *ipFlag, const char *progname)
-{
-  int bomtype = ipFlag->bomtype;
-
-  if ((bomtype == FILE_MBS)&&(ipFlag->locale_target == TARGET_GB18030))
-    bomtype = FILE_GB18030;
-
-  if (ipFlag->keep_utf16)
-  {
-    switch (bomtype) {
-      case FILE_UTF16LE:   /* UTF-16 Little Endian */
-        if (fprintf(f, "%s", "\xFF\xFE") < 0) return NULL;
-        if (ipFlag->verbose > 1) {
-          D2U_UTF8_FPRINTF(stderr, "%s: ", progname);
-          D2U_ANSI_FPRINTF(stderr, _("Writing %s BOM.\n"), _("UTF-16LE"));
-        }
-        break;
-      case FILE_UTF16BE:   /* UTF-16 Big Endian */
-        if (fprintf(f, "%s", "\xFE\xFF") < 0) return NULL;
-        if (ipFlag->verbose > 1) {
-          D2U_UTF8_FPRINTF(stderr, "%s: ", progname);
-          D2U_ANSI_FPRINTF(stderr, _("Writing %s BOM.\n"), _("UTF-16BE"));
-        }
-        break;
-      case FILE_GB18030:  /* GB18030 */
-        if (fprintf(f, "%s", "\x84\x31\x95\x33") < 0) return NULL;
-        if (ipFlag->verbose > 1) {
-          D2U_UTF8_FPRINTF(stderr, "%s: ", progname);
-          D2U_ANSI_FPRINTF(stderr, _("Writing %s BOM.\n"), _("GB18030"));
-        }
-        break;
-      default:      /* UTF-8 */
-        if (fprintf(f, "%s", "\xEF\xBB\xBF") < 0) return NULL;
-        if (ipFlag->verbose > 1) {
-          D2U_UTF8_FPRINTF(stderr, "%s: ", progname);
-          D2U_ANSI_FPRINTF(stderr, _("Writing %s BOM.\n"), _("UTF-8"));
-        }
-      ;
-    }
-  } else {
-    if ((bomtype == FILE_GB18030) ||
-        (((bomtype == FILE_UTF16LE)||(bomtype == FILE_UTF16BE))&&(ipFlag->locale_target == TARGET_GB18030))
-       ) {
-        if (fprintf(f, "%s", "\x84\x31\x95\x33") < 0) return NULL; /* GB18030 */
-        if (ipFlag->verbose > 1)
-        {
-          D2U_UTF8_FPRINTF(stderr, "%s: ", progname);
-          D2U_ANSI_FPRINTF(stderr, _("Writing %s BOM.\n"), _("GB18030"));
-        }
-     } else {
-        if (fprintf(f, "%s", "\xEF\xBB\xBF") < 0) return NULL; /* UTF-8 */
-        if (ipFlag->verbose > 1)
-        {
-          D2U_UTF8_FPRINTF(stderr, "%s: ", progname);
-          D2U_ANSI_FPRINTF(stderr, _("Writing %s BOM.\n"), _("UTF-8"));
-        }
-     }
+   *bomtype = FILE_MBS;
+   return(f);
   }
+  if ((bom[0] != 0xff) && (bom[0] != 0xfe) && (bom[0] != 0xef) && (bom[0] != 0x84)) {
+   if (ungetc(bom[0], f) == EOF)
+    return NULL;
+   *bomtype = FILE_MBS;
+   return(f);
+  }
+  if ((bom[1] = fgetc(f)) == EOF) {
+   if (ferror(f)) {
+    return NULL;
+   }
+   if (ungetc(bom[1], f) == EOF) return NULL;
+   if (ungetc(bom[0], f) == EOF) return NULL;
+   *bomtype = FILE_MBS;
+   return(f);
+  }
+  if ((bom[0] == 0xff) && (bom[1] == 0xfe)) { /* UTF16-LE */
+   *bomtype = FILE_UTF16LE;
+   return(f);
+  }
+  if ((bom[0] == 0xfe) && (bom[1] == 0xff)) { /* UTF16-BE */
+   *bomtype = FILE_UTF16BE;
+   return(f);
+  }
+  if ((bom[2] = fgetc(f)) == EOF) {
+   if (ferror(f)) {
+    return NULL;
+   }
+   if (ungetc(bom[2], f) == EOF) return NULL;
+   if (ungetc(bom[1], f) == EOF) return NULL;
+   if (ungetc(bom[0], f) == EOF) return NULL;
+   *bomtype = FILE_MBS;
+   return(f);
+  }
+  if ((bom[0] == 0xef) && (bom[1] == 0xbb) && (bom[2]== 0xbf)) { /* UTF-8 */
+   *bomtype = FILE_UTF8;
+   return(f);
+  }
+  if ((bom[0] == 0x84) && (bom[1] == 0x31) && (bom[2]== 0x95)) {
+   bom[3] = fgetc(f);
+   if (ferror(f)) {
+    return NULL;
+   }
+   if (bom[3]== 0x33) { /* GB18030 */
+    *bomtype = FILE_GB18030;
+    return(f);
+   }
+   if (ungetc(bom[3], f) == EOF) return NULL;
+  }
+  if (ungetc(bom[2], f) == EOF) return NULL;
+  if (ungetc(bom[1], f) == EOF) return NULL;
+  if (ungetc(bom[0], f) == EOF) return NULL;
+  *bomtype = FILE_MBS;
   return(f);
+ }
+ return(f);
 }
 
-void print_bom (const int bomtype, const char *filename, const char *progname)
+FILE *
+write_bom (FILE *f, CFlag *ipFlag, const char *progname)
+{
+ int bomtype = ipFlag->bomtype;
+
+ if ((bomtype == FILE_MBS) && (ipFlag->locale_target == TARGET_GB18030))
+  bomtype = FILE_GB18030;
+
+ if (ipFlag->keep_utf16) {
+  switch (bomtype) {
+   case FILE_UTF16LE:   /* UTF-16 Little Endian */
+    if (fprintf(f, "%s", "\xFF\xFE") < 0) return NULL;
+    if (ipFlag->verbose > 1) {
+     D2U_UTF8_FPRINTF(stderr, "%s: ", progname);
+     D2U_ANSI_FPRINTF(stderr, _("Writing %s BOM.\n"), _("UTF-16LE"));
+    }
+    break;
+   case FILE_UTF16BE:   /* UTF-16 Big Endian */
+    if (fprintf(f, "%s", "\xFE\xFF") < 0) return NULL;
+    if (ipFlag->verbose > 1) {
+     D2U_UTF8_FPRINTF(stderr, "%s: ", progname);
+     D2U_ANSI_FPRINTF(stderr, _("Writing %s BOM.\n"), _("UTF-16BE"));
+    }
+    break;
+   case FILE_GB18030:  /* GB18030 */
+    if (fprintf(f, "%s", "\x84\x31\x95\x33") < 0) return NULL;
+    if (ipFlag->verbose > 1) {
+     D2U_UTF8_FPRINTF(stderr, "%s: ", progname);
+     D2U_ANSI_FPRINTF(stderr, _("Writing %s BOM.\n"), _("GB18030"));
+    }
+    break;
+   default:      /* UTF-8 */
+    if (fprintf(f, "%s", "\xEF\xBB\xBF") < 0) return NULL;
+    if (ipFlag->verbose > 1) {
+     D2U_UTF8_FPRINTF(stderr, "%s: ", progname);
+     D2U_ANSI_FPRINTF(stderr, _("Writing %s BOM.\n"), _("UTF-8"));
+    }
+    ;
+  }
+ } else {
+  if (
+   (bomtype == FILE_GB18030)
+   || (((bomtype == FILE_UTF16LE)||(bomtype == FILE_UTF16BE))&&(ipFlag->locale_target == TARGET_GB18030))
+  ) {
+   if (fprintf(f, "%s", "\x84\x31\x95\x33") < 0) return NULL; /* GB18030 */
+   if (ipFlag->verbose > 1) {
+    D2U_UTF8_FPRINTF(stderr, "%s: ", progname);
+    D2U_ANSI_FPRINTF(stderr, _("Writing %s BOM.\n"), _("GB18030"));
+   }
+  } else {
+   if (fprintf(f, "%s", "\xEF\xBB\xBF") < 0) return NULL; /* UTF-8 */
+   if (ipFlag->verbose > 1) {
+    D2U_UTF8_FPRINTF(stderr, "%s: ", progname);
+    D2U_ANSI_FPRINTF(stderr, _("Writing %s BOM.\n"), _("UTF-8"));
+   }
+  }
+ }
+ return(f);
+}
+
+void
+print_bom (const int bomtype, const char *filename, const char *progname)
 {
     char informat[64];
 

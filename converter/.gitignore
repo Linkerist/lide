@@ -6,7 +6,7 @@ __install
 
 *.o
 
-po
+/po/
 
 dos2unix
 unix2dos

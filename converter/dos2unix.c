@@ -62,8 +62,8 @@ StripDelimiterW(FILE* ipInF, FILE* ipOutF, CFlag *ipFlag, wint_t CurChar, unsign
  /* CurChar is always CR (x0d) */
  /* In normal dos2unix mode put nothing (skip CR). */
  /* Don't modify Mac files when in dos2unix mode. */
- if ( (TempNextChar = d2u_getwc(ipInF, ipFlag->bomtype)) != WEOF) {
-  if (d2u_ungetwc( TempNextChar, ipInF, ipFlag->bomtype) == WEOF) {  /* put back peek char */
+ if ((TempNextChar = d2u_getwc(ipInF, ipFlag->bomtype)) != WEOF) {
+  if (d2u_ungetwc(TempNextChar, ipInF, ipFlag->bomtype) == WEOF) {  /* put back peek char */
    d2u_getc_error(ipFlag,progname);
    return WEOF;
   }
@@ -86,7 +86,7 @@ StripDelimiterW(FILE* ipInF, FILE* ipOutF, CFlag *ipFlag, wint_t CurChar, unsign
    d2u_getc_error(ipFlag,progname);
    return WEOF;
   }
-  if ( CurChar == 0x0d ) {  /* EOF: last Mac line delimiter (CR)? */
+  if (CurChar == 0x0d) {  /* EOF: last Mac line delimiter (CR)? */
    if (d2u_putwc(CurChar, ipOutF, ipFlag, progname) == WEOF) {
     d2u_putwc_error(ipFlag,progname);
     return WEOF;
